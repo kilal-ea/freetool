@@ -1,0 +1,21 @@
+[0;1;32m●[0m gunicorn.service - gunicorn daemon
+     Loaded: loaded (]8;;file://server1.freetool.us/etc/systemd/system/gunicorn.service/etc/systemd/system/gunicorn.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Wed 2026-02-25 15:30:15 UTC; 15s ago
+   Main PID: 65222 (gunicorn)
+      Tasks: 8 (limit: 1058)
+     Memory: 128.1M (peak: 128.4M)
+        CPU: 804ms
+     CGroup: /system.slice/gunicorn.service
+             ├─[0;38;5;245m65222 /root/back/myproject/venv/bin/python3 /root/back/myproject/venv/bin/gunicorn --workers 3 --bind unix:/root/back/myproject/myproject.sock myproject.wsgi:application[0m
+             ├─[0;38;5;245m65224 /root/back/myproject/venv/bin/python3 /root/back/myproject/venv/bin/gunicorn --workers 3 --bind unix:/root/back/myproject/myproject.sock myproject.wsgi:application[0m
+             ├─[0;38;5;245m65225 /root/back/myproject/venv/bin/python3 /root/back/myproject/venv/bin/gunicorn --workers 3 --bind unix:/root/back/myproject/myproject.sock myproject.wsgi:application[0m
+             └─[0;38;5;245m65226 /root/back/myproject/venv/bin/python3 /root/back/myproject/venv/bin/gunicorn --workers 3 --bind unix:/root/back/myproject/myproject.sock myproject.wsgi:application[0m
+
+Feb 25 15:30:15 server1.freetool.us systemd[1]: Started gunicorn.service - gunicorn daemon.
+Feb 25 15:30:15 server1.freetool.us gunicorn[65222]: [2026-02-25 15:30:15 +0000] [65222] [INFO] Starting gunicorn 25.1.0
+Feb 25 15:30:15 server1.freetool.us gunicorn[65222]: [2026-02-25 15:30:15 +0000] [65222] [INFO] Listening at: unix:/root/back/myproject/myproject.sock (65222)
+Feb 25 15:30:15 server1.freetool.us gunicorn[65222]: [2026-02-25 15:30:15 +0000] [65222] [INFO] Using worker: sync
+Feb 25 15:30:15 server1.freetool.us gunicorn[65224]: [2026-02-25 15:30:15 +0000] [65224] [INFO] Booting worker with pid: 65224
+Feb 25 15:30:15 server1.freetool.us gunicorn[65222]: [2026-02-25 15:30:15 +0000] [65222] [INFO] Control socket listening at /root/back/myproject/gunicorn.ctl
+Feb 25 15:30:15 server1.freetool.us gunicorn[65225]: [2026-02-25 15:30:15 +0000] [65225] [INFO] Booting worker with pid: 65225
+Feb 25 15:30:15 server1.freetool.us gunicorn[65226]: [2026-02-25 15:30:15 +0000] [65226] [INFO] Booting worker with pid: 65226

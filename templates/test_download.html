@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تحويل Word إلى PDF</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: #111827;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .card-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #374151;
+        }
+        .badge {
+            background: #e5e7eb;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #374151;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .error-box h3 {
+            margin: 0 0 8px 0;
+            color: #991b1b;
+            font-size: 16px;
+        }
+        .error-detail {
+            background: #fff5f5;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+        .success-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .success-box h3 {
+            margin: 0 0 8px 0;
+            color: #166534;
+            font-size: 16px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .info-item {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .info-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #111827;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #2563eb;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #059669;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+        .download-btn:hover {
+            background: #047857;
+        }
+        .json-view {
+            background: #1f2937;
+            color: #d1d5db;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            direction: ltr;
+            text-align: left;
+            margin-top: 16px;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-bottom: none;
+        }
+        .tab.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 اختبار تحويل Word إلى PDF</h1>
+        <p class="subtitle">هذه الصفحة تستخدم نفس الرابط: <code>/api/convert/word-to-pdf/</code></p>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>📄 رفع ملف Word</h2>
+                <span class="badge">POST /api/convert/word-to-pdf/</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="fileInput">اختر ملف Word (DOC, DOCX):</label>
+                <input type="file" id="fileInput" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            </div>
+
+            <div class="form-group">
+                <label for="deleteAfter">حذف بعد 3 دقائق:</label>
+                <input type="checkbox" id="deleteAfter" checked>
+            </div>
+
+            <button id="convertBtn" onclick="convertFile()">
+                <span>🔄 تحويل الملف</span>
+            </button>
+
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('response')">📨 الاستجابة</div>
+            <div class="tab" onclick="switchTab('error')">⚠️ تفاصيل الخطأ</div>
+            <div class="tab" onclick="switchTab('raw')">📋 RAW JSON</div>
+        </div>
+
+        <div id="responseTab" class="tab-content active">
+            <div class="card" id="successCard" style="display: none;">
+                <div class="success-box">
+                    <h3>✅ تم التحويل بنجاح!</h3>
+                    <div id="fileInfo" class="info-grid"></div>
+                    <a href="#" id="downloadLink" class="download-btn" target="_blank">📥 تحميل الملف المحول</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorTab" class="tab-content">
+            <div class="card" id="errorCard" style="display: none;">
+                <div class="error-box">
+                    <h3>❌ خطأ في التحويل</h3>
+                    <div id="errorMessage" style="font-weight: bold; margin-bottom: 12px;"></div>
+                    <div id="errorDetails" class="error-detail"></div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h4 style="margin: 10px 0;">🛠️ معلومات إضافية:</h4>
+                        <div id="extraInfo" class="info-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rawTab" class="tab-content">
+            <div class="card">
+                <h3>📋 استجابة RAW من الخادم</h3>
+                <div id="rawResponse" class="json-view">
+                    لم يتم إجراء أي تحويل بعد
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResponse = null;
+
+        function switchTab(tabName) {
+            // تحديث التبويبات
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // إذا كان التبويب RAW ومتوفر رد، اعرضه
+            if (tabName === 'raw' && currentResponse) {
+                document.getElementById('rawResponse').textContent = JSON.stringify(currentResponse, null, 2);
+            }
+        }
+
+        async function convertFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const deleteAfter = document.getElementById('deleteAfter').checked;
+            const convertBtn = document.getElementById('convertBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+
+            if (!file) {
+                alert('الرجاء اختيار ملف أولاً');
+                return;
+            }
+
+            // إخفاء النتائج السابقة
+            document.getElementById('successCard').style.display = 'none';
+            document.getElementById('errorCard').style.display = 'none';
+            
+            // إظهار شريط التقدم
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            
+            // تعطيل الزر
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = '<span>جاري التحويل...</span><span class="loading"></span>';
+
+            const formData = new FormData();
+            formData.append('word_file', file);
+            formData.append('pdf_settings', JSON.stringify({
+                preservePageBreaks: true,
+                preserveFormatting: true,
+                includeComments: false,
+                includeTrackChanges: false,
+                pageSize: "A4",
+                orientation: "portrait"
+            }));
+            formData.append('delete_after_3_minutes', deleteAfter);
+
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/convert/word-to-pdf/', true);
+
+                // تتبع التقدم
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        progressFill.style.width = percent + '%';
+                    }
+                };
+
+                // استجابة ناجحة
+                xhr.onload = function() {
+                    progressFill.style.width = '100%';
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                        response = { error: 'خطأ في تحليل الاستجابة', raw: xhr.responseText };
+                    }
+                    
+                    currentResponse = response;
+                    
+                    if (xhr.status === 200 && response.success) {
+                        showSuccess(response);
+                    } else {
+                        showError(response, xhr.status);
+                    }
+                    
+                    // تحديث التبويب RAW
+                    if (document.querySelector('.tab.active').textContent.includes('RAW')) {
+                        document.getElementById('rawResponse').textContent = JSON.stringify(response, null, 2);
+                    }
+                    
+                    // إعادة تفعيل الزر
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '<span>🔄 تحويل الملف</span>';
+                    progressBar.style.display = 'none';
+                };
+
+                // خطأ في الشبكة
+                xhr.onerror = function() {
+                    const errorResponse = {
+                        error: 'خطأ في الاتصال بالخادم',
+                        details: 'تأكد من أن الخادم يعمل على المنفذ 8000'
+                    };
+                    currentResponse = errorResponse;
+                    showError(errorResponse, 0);
+                    
+                    convertBtn.disabled = false;
+                    convertBtn.innerHTML = '<span>🔄 تحويل الملف</span>';
+                    progressBar.style.display = 'none';
+                };
+
+                xhr.send(formData);
+
+            } catch (error) {
+                const errorResponse = {
+                    error: error.message,
+                    details: error.stack
+                };
+                currentResponse = errorResponse;
+                showError(errorResponse, 0);
+                
+                convertBtn.disabled = false;
+                convertBtn.innerHTML = '<span>🔄 تحويل الملف</span>';
+                progressBar.style.display = 'none';
+            }
+        }
+
+        function showSuccess(response) {
+            document.getElementById('successCard').style.display = 'block';
+            document.getElementById('errorCard').style.display = 'none';
+            
+            // عرض معلومات الملف
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">الملف الأصلي</div>
+                    <div class="info-value">${response.original_name || 'غير معروف'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">الملف المحول</div>
+                    <div class="info-value">${response.filename || 'غير معروف'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">الحجم الأصلي</div>
+                    <div class="info-value">${formatBytes(response.original_size)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">الحجم بعد التحويل</div>
+                    <div class="info-value">${formatBytes(response.converted_size)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">نسبة الضغط</div>
+                    <div class="info-value">${response.compression_ratio || 'غير معروف'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">معرف الملف</div>
+                    <div class="info-value">${response.file_id || 'غير معروف'}</div>
+                </div>
+            `;
+            
+            // تحديث رابط التحميل
+            const downloadLink = document.getElementById('downloadLink');
+            if (response.download_url) {
+                downloadLink.href = response.download_url;
+                downloadLink.style.display = 'inline-block';
+            } else {
+                downloadLink.style.display = 'none';
+            }
+            
+            // التبديل إلى تبويب الاستجابة
+            switchTab('response');
+        }
+
+        function showError(response, status) {
+            document.getElementById('successCard').style.display = 'none';
+            document.getElementById('errorCard').style.display = 'block';
+            
+            // عرض رسالة الخطأ
+            document.getElementById('errorMessage').textContent = response.error || 'خطأ غير معروف';
+            
+            // عرض تفاصيل الخطأ
+            const errorDetails = response.detail || response.details || response.error_detail || response.traceback || 'لا توجد تفاصيل إضافية';
+            document.getElementById('errorDetails').textContent = errorDetails;
+            
+            // عرض معلومات إضافية
+            const extraInfo = document.getElementById('extraInfo');
+            extraInfo.innerHTML = `
+                <div class="info-item">
+                    <div class="info-label">حالة HTTP</div>
+                    <div class="info-value">${status || 'غير معروف'}</div>
+                </div>
+                ${response.libreoffice_info ? `
+                <div class="info-item">
+                    <div class="info-label">مسار LibreOffice</div>
+                    <div class="info-value">${response.libreoffice_info.path || 'غير موجود'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">الإصدار</div>
+                    <div class="info-value">${response.libreoffice_info.version || 'غير معروف'}</div>
+                </div>
+                ` : ''}
+            `;
+            
+            // التبديل إلى تبويب الخطأ
+            switchTab('error');
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0 || !bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // دعم السحب والإفلات
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInput.style.borderColor = '#2563eb';
+        });
+        
+        fileInput.addEventListener('dragleave', () => {
+            fileInput.style.borderColor = '#d1d5db';
+        });
+        
+        fileInput.addEventListener('drop', () => {
+            fileInput.style.borderColor = '#d1d5db';
+        });
+    </script>
+</body>
+</html>

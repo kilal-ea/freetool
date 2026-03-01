@@ -1,0 +1,18 @@
+[0;1;31m×[0m nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (]8;;file://server1.freetool.us/usr/lib/systemd/system/nginx.service/usr/lib/systemd/system/nginx.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;31mfailed[0m (Result: exit-code) since Wed 2026-02-25 15:33:17 UTC; 4s ago
+       Docs: ]8;;man:nginx(8)man:nginx(8)]8;;
+    Process: 66806 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 66808 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; [0;1;31m(code=exited, status=1/FAILURE)[0m
+        CPU: 7ms
+
+Feb 25 15:33:15 server1.freetool.us systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...
+Feb 25 15:33:15 server1.freetool.us nginx[66808]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+Feb 25 15:33:15 server1.freetool.us nginx[66808]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+Feb 25 15:33:16 server1.freetool.us nginx[66808]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+Feb 25 15:33:16 server1.freetool.us nginx[66808]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+Feb 25 15:33:17 server1.freetool.us nginx[66808]: nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)
+Feb 25 15:33:17 server1.freetool.us nginx[66808]: nginx: [emerg] still could not bind()
+Feb 25 15:33:17 server1.freetool.us systemd[1]: [0;1;39m[0;1;31m[0;1;39mnginx.service: Control process exited, code=exited, status=1/FAILURE[0m
+Feb 25 15:33:17 server1.freetool.us systemd[1]: [0;1;38;5;185m[0;1;39m[0;1;38;5;185mnginx.service: Failed with result 'exit-code'.[0m
+Feb 25 15:33:17 server1.freetool.us systemd[1]: [0;1;31m[0;1;39m[0;1;31mFailed to start nginx.service - A high performance web server and a reverse proxy server.[0m

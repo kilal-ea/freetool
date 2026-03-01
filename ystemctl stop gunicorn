@@ -1,0 +1,14 @@
+○ gunicorn.service - gunicorn daemon for Django project
+     Loaded: loaded (]8;;file://server1.freetool.us/etc/systemd/system/gunicorn.service/etc/systemd/system/gunicorn.service]8;;; [0;1;38;5;185mdisabled[0m; preset: [0;1;32menabled[0m)
+     Active: inactive (dead)
+
+Mar 01 14:34:51 server1.freetool.us gunicorn[89295]: 📁 [Directory] Using directory: /root/back/myproject/media/word_to_pdf
+Mar 01 14:34:51 server1.freetool.us gunicorn[89295]: 📁 [Directory] Using directory: /root/back/myproject/media/word_to_pdf
+Mar 01 14:34:51 server1.freetool.us gunicorn[89295]: 📁 [Directory] Using directory: /root/back/myproject/media/word_to_pdf
+Mar 01 14:34:51 server1.freetool.us gunicorn[89292]: [2026-03-01 14:34:51 +0000] [89292] [INFO] Handling signal: term
+Mar 01 14:34:52 server1.freetool.us gunicorn[89292]: [2026-03-01 14:34:52 +0000] [89292] [INFO] Worker (pid:89294) was sent SIGTERM!
+Mar 01 14:34:52 server1.freetool.us gunicorn[89292]: [2026-03-01 14:34:52 +0000] [89292] [INFO] Worker (pid:89295) was sent SIGTERM!
+Mar 01 14:34:52 server1.freetool.us gunicorn[89292]: [2026-03-01 14:34:52 +0000] [89292] [INFO] Shutting down: Master
+Mar 01 14:34:52 server1.freetool.us systemd[1]: gunicorn.service: Deactivated successfully.
+Mar 01 14:34:52 server1.freetool.us systemd[1]: Stopped gunicorn.service - gunicorn daemon.
+Mar 01 14:34:52 server1.freetool.us systemd[1]: gunicorn.service: Consumed 59.664s CPU time, 766.2M memory peak, 1.0G memory swap peak.
