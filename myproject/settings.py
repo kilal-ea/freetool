@@ -20,6 +20,7 @@ ALLOWED_HOSTS = [
     '192.168.1.20',
     '104.207.71.55',
 ]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,8 +32,8 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
-    'corsheaders',
-    'rest_framework_simplejwt', # Added for JWT authentication
+    'corsheaders',  # ✅ مهم جداً
+    'rest_framework_simplejwt',
     'django_downloadview',
     
     # Your apps
@@ -53,7 +54,6 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
-
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
@@ -61,26 +61,22 @@ SIMPLE_JWT = {
     'ISSUER': None,
     'JWK_URL': None,
     'LEEWAY': 0,
-
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
     'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-
     'JTI_CLAIM': 'jti',
-
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # ✅ يجب أن يكون في الأعلى
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,6 +91,70 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
+# ✅ إعدادات CORS المهمة - أضف كل المنافذ التي تحتاجها
+CORS_ALLOWED_ORIGINS = [
+    # للتطوير المحلي
+    "http://localhost:3000",
+    "http://localhost:4173",  # ✅ Vite preview (مهم جداً)
+    "http://localhost:5173",  # ✅ Vite dev default
+    "http://localhost:8080",  # ✅ منفذ التطوير الخاص بك
+    
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:4173",  # ✅
+    "http://127.0.0.1:5173",  # ✅
+    "http://127.0.0.1:8080",  # ✅
+    
+    # IP addresses
+    "http://192.168.1.20:8080",
+    "http://192.168.1.20:4173",  # ✅
+    
+    # للإنتاج
+    "http://freetool.us",
+    "http://www.freetool.us",
+    "https://freetool.us",
+    "https://www.freetool.us",
+]
+
+# ✅ إضافة CORS_ALLOWED_ORIGIN_REGEX للسماح بأي منفذ في localhost (اختياري)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",  # يسمح بأي منفذ على localhost
+    r"^http://127\.0\.0\.1:\d+$",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-api-key',
+    'x-requested-with',
+    'x-file-name',  
+    'x-file-size',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'content-disposition',
+    'x-original-size',
+    'x-converted-size',
+    'x-saved-bytes',
+    'x-compression-ratio'
+]
+
+# ✅ إعدادات إضافية لطلبات OPTIONS (preflight)
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 ساعة - يقلل عدد طلبات preflight
 
 ROOT_URLCONF = 'myproject.urls'
 
@@ -141,10 +201,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Custom Settings for No-Auth JWT ---
-# IMPORTANT: In production, store this in environment variables, not directly in settings.py!
-STATIC_API_KEY = os.environ.get('STATIC_API_KEY', 'your-super-secret-api-key') # Replace with a strong, unique key
-MACHINE_USERNAME = os.environ.get('MACHINE_USERNAME', 'machine_user') # User for whom tokens will be issued
-# Allow issuing machine tokens without API key (useful for local/dev only).
+STATIC_API_KEY = os.environ.get('STATIC_API_KEY', 'your-super-secret-api-key')
+MACHINE_USERNAME = os.environ.get('MACHINE_USERNAME', 'machine_user')
 ALLOW_MACHINE_TOKEN_WITHOUT_API_KEY = os.environ.get('ALLOW_MACHINE_TOKEN_WITHOUT_API_KEY', str(DEBUG)).lower() in ('1', 'true', 'yes')
 # --- End Custom Settings ---
 
@@ -152,7 +210,6 @@ ALLOW_MACHINE_TOKEN_WITHOUT_API_KEY = os.environ.get('ALLOW_MACHINE_TOKEN_WITHOU
 class IgnoreBrokenPipeFilter(logging.Filter):
     def filter(self, record):
         return "Broken pipe from" not in record.getMessage()
-
 
 LOGGING = {
     'version': 1,
@@ -205,10 +262,6 @@ os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 
-
-##################################
-# settings.py
-
 # File storage settings
 FILE_STORAGE_PATH = os.path.join(BASE_DIR, 'files')
 
@@ -217,44 +270,3 @@ os.makedirs(FILE_STORAGE_PATH, exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'uploads'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'converted'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'temp'), exist_ok=True)
-
-##################################
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",      # ← تغيير من 3000 إلى 8080
-    "http://127.0.0.1:8080",     # ← تغيير من 3000 إلى 8080
-    "http://192.168.1.20:8080",  # ← إضافة هذا أيضاً
-    "http://freetool.us",
-    "http://www.freetool.us",
-    "https://freetool.us",
-    "https://www.freetool.us",
-]
-
-CORS_ALLOW_METHODS = [
-    'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
-]
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-api-key',
-    'x-requested-with',
-    'x-file-name',  
-    'x-file-size',  
-]
-
-
-CORS_EXPOSE_HEADERS = [
-    'content-disposition',
-    'x-original-size',
-    'x-converted-size',
-    'x-saved-bytes',
-    'x-compression-ratio'
-]
-
