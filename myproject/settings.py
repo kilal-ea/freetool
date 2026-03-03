@@ -17,6 +17,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'freetool.us',
     'www.freetool.us',
+    'https://freetool.us',
     '192.168.1.20',
     '104.207.71.55',
 ]
@@ -270,3 +271,4 @@ os.makedirs(FILE_STORAGE_PATH, exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'uploads'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'converted'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'temp'), exist_ok=True)
+
