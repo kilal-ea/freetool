@@ -329,8 +329,21 @@ def convert_image_with_imagemagick(request):
     if not image_file:
         return JsonResponse({"success": False, "error": "No image file provided."}, status=400)
 
-    # Validate output format
-    output_format = _normalize_output_format(request.POST.get("output_format"))
+    # Parse parameters
+    keep_original_format = str(request.POST.get("keep_original_format", "false")).lower() == "true"
+    
+    # Determine output format
+    output_format_raw = request.POST.get("output_format") or "png"
+    
+    if keep_original_format:
+        # Extract original format from filename
+        original_ext = image_file.name.split('.')[-1].lower() if '.' in image_file.name else 'png'
+        if original_ext == 'jpg':
+            original_ext = 'jpeg'
+        output_format = _normalize_output_format(original_ext)
+    else:
+        output_format = _normalize_output_format(output_format_raw)
+    
     if not output_format:
         return JsonResponse({"success": False, "error": "Unsupported output format."}, status=400)
 
@@ -369,6 +382,7 @@ def convert_image_with_imagemagick(request):
         request.POST["max_width"] = str(width)
         request.POST["max_height"] = str(height)
         request.POST["maintain_aspect_ratio"] = str(maintain_aspect_ratio).lower()
+        request.POST["keep_original_format"] = str(keep_original_format).lower()
         request.POST._mutable = False
         
         return compress_image_with_pillow(request)
@@ -421,7 +435,10 @@ def convert_image_with_imagemagick(request):
 
     # Generate filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{base_name}_{timestamp}.{output_format}"
+    if keep_original_format:
+        filename = f"{base_name}_resized_{timestamp}.{output_format}"
+    else:
+        filename = f"{base_name}_converted_{timestamp}.{output_format}"
 
     return JsonResponse({
         "success": True,
@@ -435,6 +452,7 @@ def convert_image_with_imagemagick(request):
         "download_url": _download_url(request, file_id),
         "output_format": output_format,
         "method": "imagemagick",
+        "keep_original_format": keep_original_format
     })
 
 
@@ -450,6 +468,8 @@ def compress_image_with_pillow(request):
         return JsonResponse({"success": False, "error": "No image file provided."}, status=400)
 
     # Parse parameters
+    keep_original_format = str(request.POST.get("keep_original_format", "false")).lower() == "true"
+    
     try:
         compression_level = int(request.POST.get("compression_level", "70"))
     except ValueError:
@@ -464,13 +484,12 @@ def compress_image_with_pillow(request):
     except ValueError:
         max_width = 1920
         
-    # Keep height unconstrained unless explicitly provided by client.
     try:
         max_height = int(request.POST.get("max_height", "100000"))
     except ValueError:
         max_height = 100000
 
-    output_format_raw = (request.POST.get("output_format") or "same").lower().strip()
+    output_format_raw = request.POST.get("output_format") or "same"
     
     # Additional optimization options
     use_progressive = str(request.POST.get("use_progressive", "true")).lower() == "true"
@@ -483,7 +502,9 @@ def compress_image_with_pillow(request):
     if input_ext == "jpg":
         input_ext = "jpeg"
 
-    if output_format_raw in {"same", ""}:
+    if keep_original_format:
+        output_format = input_ext if input_ext in IMAGE_MIME_TYPES else "jpeg"
+    elif output_format_raw in {"same", ""}:
         output_format = input_ext if input_ext in IMAGE_MIME_TYPES else "jpeg"
     else:
         output_format = _normalize_output_format(output_format_raw)
@@ -545,16 +566,13 @@ def compress_image_with_pillow(request):
     elif output_format == "webp":
         if image.mode not in ("RGB", "RGBA", "L"):
             image = image.convert("RGB")
-        # WebP does not use JPEG-only options like subsampling/progressive.
         save_kwargs.update({
             "quality": quality,
             "method": 6,
         })
-        
     elif output_format == "png":
         # PNG optimization
         if optimize_colors and image.mode == "RGBA":
-            # Preserve transparency while optimizing
             save_kwargs.update({
                 "optimize": True,
                 "compress_level": max(0, min(9, int(round((100 - compression_level) / 10)))),
@@ -565,29 +583,24 @@ def compress_image_with_pillow(request):
                 "optimize": True,
                 "compress_level": png_level,
             })
-    # تم إزالة قسم TIFF
 
     # Handle metadata
     if keep_metadata and not strip_metadata:
-        # Preserve EXIF data for JPEG/WebP
         exif = image.info.get("exif")
-        if exif and output_format in {"jpeg", "webp"}:  # تم إزالة TIFF من القائمة
+        if exif and output_format in {"jpeg", "webp"}:
             save_kwargs["exif"] = exif
     elif strip_metadata:
-        # Remove all metadata for smaller file size
         image.info.clear()
 
     # Save to buffer
     output_buffer = BytesIO()
     try:
-        # Try saving with retry logic for EXIF issues
         for attempt in range(2):
             try:
                 image.save(output_buffer, format=output_format.upper(), **save_kwargs)
                 break
             except Exception as e:
                 if attempt == 0 and "exif" in save_kwargs:
-                    # If EXIF causes error, try without it
                     save_kwargs.pop("exif", None)
                 else:
                     raise e
@@ -598,8 +611,6 @@ def compress_image_with_pillow(request):
     output_bytes = output_buffer.getvalue()
     converted_size = len(output_bytes)
     saved_bytes = max(0, original_size - converted_size)
-    
-    # Calculate compression ratio
     compression_ratio = (1 - (converted_size / original_size)) * 100 if original_size > 0 else 0
     
     # Save output
@@ -608,7 +619,10 @@ def compress_image_with_pillow(request):
     # Generate filename
     base_name = os.path.splitext(input_name)[0]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{base_name}_compressed_{timestamp}.{output_format}"
+    if keep_original_format:
+        filename = f"{base_name}_resized_{timestamp}.{output_format}"
+    else:
+        filename = f"{base_name}_converted_{timestamp}.{output_format}"
 
     return JsonResponse({
         "success": True,
@@ -623,13 +637,13 @@ def compress_image_with_pillow(request):
         "output_format": output_format,
         "compression_level": compression_level,
         "method": "pillow",
+        "keep_original_format": keep_original_format,
         "quality_optimizations": {
             "progressive": use_progressive,
             "optimized_colors": optimize_colors,
             "metadata_kept": keep_metadata and not strip_metadata,
         }
     })
-
 
 @api_view(["GET"])
 def download_image_file_once(request, file_id):
@@ -678,3 +692,4 @@ def download_image_file_once(request, file_id):
     response["Access-Control-Expose-Headers"] = "Content-Disposition, Content-Length"
     
     return response
+
