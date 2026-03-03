@@ -13,6 +13,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     'localhost',
+    '192.168.1.27',
     '127.0.0.1',
     'freetool.us',
     'www.freetool.us',
@@ -256,3 +257,4 @@ CORS_EXPOSE_HEADERS = [
     'x-saved-bytes',
     'x-compression-ratio'
 ]
+
