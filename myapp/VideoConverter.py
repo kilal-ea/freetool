@@ -205,7 +205,7 @@ def _schedule_deletion(file_id, delay_seconds=180):
 @parser_classes([MultiPartParser, FormParser])
 @require_http_methods(["POST", "OPTIONS"])
 def convert_video(request):
-    """تحويل الفيديو - يدعم تغيير الأبعاد (الطول والعرض)"""
+    """تحويل الفيديو - يدعم تغيير الأبعاد (الطول والعرض) مع أو بدون تغيير الصيغة"""
     
     # معالجة طلبات OPTIONS لـ CORS
     if request.method == "OPTIONS":
@@ -261,6 +261,14 @@ def convert_video(request):
 
         # إعدادات التحويل الأساسية
         target_ext = MediaCommon._normalize_ext(settings_data.get("target_format"), "mp4")
+        keep_original_format = settings_data.get("keep_original_format", False)
+        
+        # إذا كان المستخدم يريد الاحتفاظ بالصيغة الأصلية
+        if keep_original_format:
+            # استخراج الصيغة الأصلية من اسم الملف
+            original_ext = video_file.name.split('.')[-1].lower() if '.' in video_file.name else 'mp4'
+            target_ext = MediaCommon._normalize_ext(original_ext, "mp4")
+            logger.info(f"Keeping original format: {target_ext}")
         
         # التحقق من أن الصيغة المستهدفة مدعومة
         if target_ext not in SUPPORTED_VIDEO_FORMATS:
@@ -289,7 +297,7 @@ def convert_video(request):
         target_height = settings_data.get("target_height")
 
         original_size = video_file.size
-        logger.info(f"Converting file: {video_file.name}, size: {original_size}, to: {target_ext}")
+        logger.info(f"Processing file: {video_file.name}, size: {original_size}, target format: {target_ext}, keep original format: {keep_original_format}")
 
         # إنشاء مجلد مؤقت
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -331,7 +339,7 @@ def convert_video(request):
                     
                     # إضافة padding للحصول على الأبعاد المحددة بالضبط
                     # هذا يضيف حدود سوداء إذا لزم الأمر للحصول على الأبعاد المحددة
-                    scale_filter += f",pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2"
+                    scale_filter += f",pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color=black"
                     
                     logger.info(f"Applying custom dimensions: {target_width}x{target_height}")
                 except (ValueError, TypeError) as e:
@@ -417,7 +425,8 @@ def convert_video(request):
             "supported_formats": list(SUPPORTED_VIDEO_FORMATS),
             # إضافة معلومات الأبعاد إلى الاستجابة
             "target_width": target_width,
-            "target_height": target_height
+            "target_height": target_height,
+            "keep_original_format": keep_original_format
         }
         
         logger.info(f"Conversion successful: {response_data}")
@@ -436,7 +445,6 @@ def convert_video(request):
             {"success": False, "error": f"Conversion failed: {str(e)}"},
             status=500
         )
-
 
 @api_view(["GET", "OPTIONS"])
 @require_http_methods(["GET", "OPTIONS"])
@@ -652,3 +660,4 @@ def check_file_validity(request, file_id):
             "success": False,
             "error": str(e)
         }, status=500)
+
