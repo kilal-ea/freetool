@@ -205,7 +205,7 @@ def _schedule_deletion(file_id, delay_seconds=180):
 @parser_classes([MultiPartParser, FormParser])
 @require_http_methods(["POST", "OPTIONS"])
 def convert_video(request):
-    """تحويل الفيديو - يدعم صيغ الفيديو فقط"""
+    """تحويل الفيديو - يدعم تغيير الأبعاد (الطول والعرض)"""
     
     # معالجة طلبات OPTIONS لـ CORS
     if request.method == "OPTIONS":
@@ -259,7 +259,7 @@ def convert_video(request):
             except json.JSONDecodeError as e:
                 logger.warning(f"Invalid JSON in conversion_settings: {e}")
 
-        # إعدادات التحويل
+        # إعدادات التحويل الأساسية
         target_ext = MediaCommon._normalize_ext(settings_data.get("target_format"), "mp4")
         
         # التحقق من أن الصيغة المستهدفة مدعومة
@@ -283,6 +283,10 @@ def convert_video(request):
         remove_audio = bool(settings_data.get("remove_audio", False))
         preserve_metadata = bool(settings_data.get("preserve_metadata", True))
         fast_start = bool(settings_data.get("fast_start", True))
+        
+        # إضافة الأبعاد المستهدفة من Social Media Presets
+        target_width = settings_data.get("target_width")
+        target_height = settings_data.get("target_height")
 
         original_size = video_file.size
         logger.info(f"Converting file: {video_file.name}, size: {original_size}, to: {target_ext}")
@@ -292,10 +296,12 @@ def convert_video(request):
             # حفظ الملف المرفوع
             base_name, input_path = _load_video_for_convert(video_file, temp_dir)
             
-            # ✅ الحل: إنشاء اسم فريد لملف الإخراج لمنع الكتابة على ملف الإدخال
+            # إنشاء اسم فريد لملف الإخراج
+            import uuid
+            unique_id = uuid.uuid4().hex[:8]
             timestamp = int(datetime.now().timestamp())
-            unique_suffix = f"_{timestamp}"
-            output_filename = f"{base_name}{unique_suffix}.{target_ext}"
+            safe_base = re.sub(r'[^\w\-_]', '_', base_name)
+            output_filename = f"{safe_base}_{timestamp}_{unique_id}.{target_ext}"
             output_path = os.path.join(temp_dir, output_filename)
 
             # بناء أمر FFmpeg
@@ -309,10 +315,39 @@ def convert_video(request):
             if framerate and str(framerate).lower() != "original":
                 cmd.extend(["-r", str(framerate)])
 
-            # الدقة
-            scale = MediaCommon._resolution_scale(resolution)
-            if scale:
-                cmd.extend(["-vf", f"scale={scale}:force_original_aspect_ratio=decrease"])
+            # معالجة الأبعاد (الطول والعرض) - الأهمية هنا
+            scale_filter = None
+            
+            # إذا كان هناك target_width و target_height من Social Media Presets
+            if target_width and target_height:
+                # تحويل الأرقام إلى int
+                try:
+                    target_width = int(target_width)
+                    target_height = int(target_height)
+                    
+                    # بناء scale filter مع الحفاظ على نسبة العرض إلى الارتفاع
+                    # force_original_aspect_ratio=decrease: يضمن عدم تشويه الفيديو
+                    scale_filter = f"scale={target_width}:{target_height}:force_original_aspect_ratio=decrease"
+                    
+                    # إضافة padding للحصول على الأبعاد المحددة بالضبط
+                    # هذا يضيف حدود سوداء إذا لزم الأمر للحصول على الأبعاد المحددة
+                    scale_filter += f",pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2"
+                    
+                    logger.info(f"Applying custom dimensions: {target_width}x{target_height}")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid target dimensions: {target_width}x{target_height}")
+                    scale_filter = None
+            
+            # إذا لم يكن هناك target dimensions، استخدم scale من إعدادات resolution
+            if not scale_filter:
+                scale = MediaCommon._resolution_scale(resolution)
+                if scale:
+                    scale_filter = f"scale={scale}:force_original_aspect_ratio=decrease"
+                    logger.info(f"Applying resolution scale: {scale}")
+            
+            # إضافة scale filter إلى الأمر إذا وجد
+            if scale_filter:
+                cmd.extend(["-vf", scale_filter])
 
             # إعدادات الصوت
             if remove_audio:
@@ -379,7 +414,10 @@ def convert_video(request):
             "download_url": download_url,
             "expires_in_minutes": 3,
             "format": target_ext,
-            "supported_formats": list(SUPPORTED_VIDEO_FORMATS)
+            "supported_formats": list(SUPPORTED_VIDEO_FORMATS),
+            # إضافة معلومات الأبعاد إلى الاستجابة
+            "target_width": target_width,
+            "target_height": target_height
         }
         
         logger.info(f"Conversion successful: {response_data}")
