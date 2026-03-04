@@ -17,9 +17,9 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'freetool.us',
     'www.freetool.us',
-    'https://freetool.us',
-    '192.168.1.20',
+    'api.freetool.us',
     '104.207.71.55',
+    'server1.freetool.us',
 ]
 
 # Application definition
@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
-    'corsheaders',  # ✅ مهم جداً
+    'corsheaders',
     'rest_framework_simplejwt',
     'django_downloadview',
     
@@ -77,7 +77,7 @@ SIMPLE_JWT = {
 }
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # ✅ يجب أن يكون في الأعلى
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,33 +92,30 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
-# ✅ إعدادات CORS المهمة - أضف كل المنافذ التي تحتاجها
 CORS_ALLOWED_ORIGINS = [
     # للتطوير المحلي
     "http://localhost:3000",
-    "http://localhost:4173",  # ✅ Vite preview (مهم جداً)
-    "http://localhost:5173",  # ✅ Vite dev default
-    "http://localhost:8080",  # ✅ منفذ التطوير الخاص بك
+    "http://localhost:4173",
+    "http://localhost:5173",
+    "http://localhost:8080",
     
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:4173",  # ✅
-    "http://127.0.0.1:5173",  # ✅
-    "http://127.0.0.1:8080",  # ✅
+    "http://127.0.0.1:4173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
     
     # IP addresses
     "http://192.168.1.20:8080",
-    "http://192.168.1.20:4173",  # ✅
+    "http://192.168.1.20:4173",
     
-    # للإنتاج
-    "http://freetool.us",
-    "http://www.freetool.us",
+    # للإنتاج - HTTPS
     "https://freetool.us",
     "https://www.freetool.us",
+    "https://api.freetool.us",
 ]
 
-# ✅ إضافة CORS_ALLOWED_ORIGIN_REGEX للسماح بأي منفذ في localhost (اختياري)
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^http://localhost:\d+$",  # يسمح بأي منفذ على localhost
+    r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
 ]
 
@@ -142,7 +139,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-api-key',
     'x-requested-with',
-    'x-file-name',  
+    'x-file-name',
     'x-file-size',
 ]
 
@@ -154,8 +151,7 @@ CORS_EXPOSE_HEADERS = [
     'x-compression-ratio'
 ]
 
-# ✅ إعدادات إضافية لطلبات OPTIONS (preflight)
-CORS_PREFLIGHT_MAX_AGE = 86400  # 24 ساعة - يقلل عدد طلبات preflight
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 ROOT_URLCONF = 'myproject.urls'
 
@@ -206,6 +202,15 @@ STATIC_API_KEY = os.environ.get('STATIC_API_KEY', 'your-super-secret-api-key')
 MACHINE_USERNAME = os.environ.get('MACHINE_USERNAME', 'machine_user')
 ALLOW_MACHINE_TOKEN_WITHOUT_API_KEY = os.environ.get('ALLOW_MACHINE_TOKEN_WITHOUT_API_KEY', str(DEBUG)).lower() in ('1', 'true', 'yes')
 # --- End Custom Settings ---
+
+# إعدادات الأمان لـ HTTPS
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # Logging
 class IgnoreBrokenPipeFilter(logging.Filter):
@@ -271,4 +276,3 @@ os.makedirs(FILE_STORAGE_PATH, exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'uploads'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'converted'), exist_ok=True)
 os.makedirs(os.path.join(FILE_STORAGE_PATH, 'temp'), exist_ok=True)
-
