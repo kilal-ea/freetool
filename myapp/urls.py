@@ -153,4 +153,9 @@ urlpatterns = [
     path("api/extract/audio/remove/<str:file_id>/", AudioExtractor.remove_media_file, name="extract_audio_remove"),
     path("api/media/cleanup/", MediaMaintenance.cleanup_media_files, name="cleanup_media"),
     path("api/media/check/<str:file_id>/", MediaMaintenance.check_file_validity, name="check_file_validity"),
+
+        path('api/page/save/', views.save_page, name='save_page'),
+    path('api/pages/save-multiple/', views.save_multiple_pages, name='save_multiple_pages'),
+    path('api/page/get/', views.get_page_by_url, name='get_page'),
+    path('api/pages/all/', views.get_all_pages, name='get_all_pages'),
 ]
