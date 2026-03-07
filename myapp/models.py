@@ -120,33 +120,33 @@ class PageStatus(models.Model):
     url = models.URLField(max_length=500, unique=True, db_index=True)
     path = models.CharField(max_length=255, db_index=True)  # المسار النسبي
     name = models.CharField(max_length=255, blank=True, default="")  # اسم الصفحة
-    category = models.CharField(max_length=100, blank=True, default="")  # تصنيف الصفحة (tools, blog, etc)
+    category = models.CharField(max_length=100, blank=True, default="")  # تصنيف الصفحة
     
     # حالة الصفحة
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     
-    # معلومات الفحص
+    # معلومات الفحص (يمكن تركها فارغة)
     last_checked = models.DateTimeField(null=True, blank=True)
-    response_time = models.FloatField(null=True, blank=True)  # بالمللي ثانية
+    response_time = models.FloatField(null=True, blank=True)
     http_status = models.IntegerField(null=True, blank=True)
     error_message = models.TextField(blank=True, default="")
     
     # معلومات إضافية
-    title = models.CharField(max_length=500, blank=True, default="")  # عنوان الصفحة
+    title = models.CharField(max_length=500, blank=True, default="")
     meta_description = models.TextField(blank=True, default="")
-    content_hash = models.CharField(max_length=64, blank=True, default="")  # للكشف عن التغييرات
+    content_hash = models.CharField(max_length=64, blank=True, default="")
     
     # إحصائيات
-    check_count = models.PositiveIntegerField(default=0)  # عدد مرات الفحص
-    failure_count = models.PositiveIntegerField(default=0)  # عدد مرات الفشل
+    check_count = models.PositiveIntegerField(default=0)
+    failure_count = models.PositiveIntegerField(default=0)
     
     # تواريخ
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     # للصفحات الديناميكية
-    is_dynamic = models.BooleanField(default=False)  # هل الصفحة ديناميكية (تحتوي على parameters)
-    parameter_pattern = models.CharField(max_length=255, blank=True, default="")  # نمط المعاملات
+    is_dynamic = models.BooleanField(default=False)
+    parameter_pattern = models.CharField(max_length=255, blank=True, default="")
     
     class Meta:
         ordering = ['-created_at']
@@ -157,49 +157,3 @@ class PageStatus(models.Model):
     
     def __str__(self):
         return f"{self.path} - {self.get_status_display()}"
-    
-    def update_status(self, is_working: bool, response_time: float = None, http_status: int = None, error: str = ""):
-        """تحديث حالة الصفحة بعد الفحص"""
-        self.last_checked = timezone.now()
-        self.check_count += 1
-        self.response_time = response_time
-        self.http_status = http_status
-        
-        if is_working:
-            self.status = 'working'
-            self.error_message = ""
-            self.failure_count = 0
-        else:
-            self.failure_count += 1
-            self.error_message = error[:1000]  # تقييد الطول
-            
-            # إذا فشلت 3 مرات متتالية، ضعها كـ "لا تعمل"
-            if self.failure_count >= 3:
-                self.status = 'not_working'
-        
-        self.save(update_fields=['last_checked', 'check_count', 'response_time', 
-                                 'http_status', 'status', 'error_message', 'failure_count'])
-    
-    def mark_for_reprocess(self):
-        """وضع علامة لإعادة المعالجة"""
-        self.status = 'reprocess'
-        self.save(update_fields=['status'])
-
-
-class PageCheckHistory(models.Model):
-    """سجل تاريخ فحص الصفحات"""
-    page = models.ForeignKey(PageStatus, on_delete=models.CASCADE, related_name='history')
-    status = models.CharField(max_length=20, choices=PageStatus.STATUS_CHOICES)
-    response_time = models.FloatField(null=True, blank=True)
-    http_status = models.IntegerField(null=True, blank=True)
-    error_message = models.TextField(blank=True, default="")
-    checked_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    
-    class Meta:
-        ordering = ['-checked_at']
-        indexes = [
-            models.Index(fields=['page', 'checked_at']),
-        ]
-    
-    def __str__(self):
-        return f"{self.page.path} - {self.checked_at}"
