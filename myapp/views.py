@@ -1185,6 +1185,7 @@ logger = logging.getLogger(__name__)
 # ... الكود السابق ...
 
 @require_http_methods(["GET"])
+@api_view(['GET'])
 def admin_get_pages(request):
     """
     API للإدارة - جلب الصفحات مع فلترة وبحث
@@ -1502,4 +1503,5 @@ def admin_get_stats(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
 
