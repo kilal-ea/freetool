@@ -1,159 +1,126 @@
-from django.db import models
+print("=" * 50)
+print("Loading admin.py for myapp")
+print("=" * 50)
+
+from django.contrib import admin
+from .models import (
+    BlockedIP, ContactMessage, ErrorLog, FileProcess, 
+    IPUsage, SystemMetric, ToolUsage, VisitEvent, PageStatus
+)
+
+print(f"PageStatus imported: {PageStatus}")
+print(f"All models imported: {[m.__name__ for m in [BlockedIP, ContactMessage, ErrorLog, FileProcess, IPUsage, SystemMetric, ToolUsage, VisitEvent, PageStatus]]}")
+print("=" * 50)
 
 
-class ToolUsage(models.Model):
-    tool_name = models.CharField(max_length=120, db_index=True)
-    tool_category = models.CharField(max_length=64, db_index=True)
-    operation_count = models.PositiveIntegerField(default=1)
-    success = models.BooleanField(default=True, db_index=True)
-    processing_time_ms = models.PositiveIntegerField(default=0)
-    file_size_bytes = models.BigIntegerField(default=0)
-    conversion_from = models.CharField(max_length=32, blank=True, default="")
-    conversion_to = models.CharField(max_length=32, blank=True, default="")
-    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
-    class Meta:
-        ordering = ["-created_at"]
+@admin.register(ToolUsage)
+class ToolUsageAdmin(admin.ModelAdmin):
+    list_display = ('tool_name', 'tool_category', 'operation_count', 'success', 'processing_time_ms', 'created_at')
+    list_filter = ('tool_category', 'success', 'created_at')
+    search_fields = ('tool_name', 'tool_category', 'conversion_from', 'conversion_to', 'ip_address')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)
 
 
-class FileProcess(models.Model):
-    STATUS_CHOICES = [
-        ("processing", "Processing"),
-        ("success", "Success"),
-        ("failed", "Failed"),
-        ("deleted", "Deleted"),
-    ]
-
-    tool_name = models.CharField(max_length=120, db_index=True)
-    original_filename = models.CharField(max_length=255)
-    file_size = models.BigIntegerField(default=0)
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="processing", db_index=True)
-    upload_timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    deletion_timestamp = models.DateTimeField(null=True, blank=True)
-    auto_delete = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ["-upload_timestamp"]
+@admin.register(FileProcess)
+class FileProcessAdmin(admin.ModelAdmin):
+    list_display = ('tool_name', 'original_filename', 'file_size', 'status', 'upload_timestamp')
+    list_filter = ('status', 'tool_name', 'auto_delete', 'upload_timestamp')
+    search_fields = ('tool_name', 'original_filename', 'status')
+    date_hierarchy = 'upload_timestamp'
+    readonly_fields = ('upload_timestamp',)
 
 
-class SystemMetric(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    cpu_usage = models.FloatField(default=0.0)
-    ram_usage = models.FloatField(default=0.0)
-    disk_usage = models.FloatField(default=0.0)
-    active_jobs = models.PositiveIntegerField(default=0)
-    queue_length = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ["-timestamp"]
+@admin.register(SystemMetric)
+class SystemMetricAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'cpu_usage', 'ram_usage', 'disk_usage', 'active_jobs', 'queue_length')
+    list_filter = ('timestamp',)
+    search_fields = ('timestamp',)
+    date_hierarchy = 'timestamp'
+    readonly_fields = ('timestamp',)
 
 
-class ErrorLog(models.Model):
-    tool_name = models.CharField(max_length=120, db_index=True)
-    error_type = models.CharField(max_length=120, db_index=True)
-    error_message = models.TextField()
-    stack_trace = models.TextField(blank=True, default="")
-    related_file = models.CharField(max_length=255, blank=True, default="")
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
-
-    class Meta:
-        ordering = ["-timestamp"]
+@admin.register(ErrorLog)
+class ErrorLogAdmin(admin.ModelAdmin):
+    list_display = ('tool_name', 'error_type', 'error_message', 'timestamp', 'ip_address')
+    list_filter = ('tool_name', 'error_type', 'timestamp')
+    search_fields = ('tool_name', 'error_type', 'error_message', 'related_file', 'ip_address', 'stack_trace')
+    date_hierarchy = 'timestamp'
+    readonly_fields = ('timestamp',)
 
 
-class BlockedIP(models.Model):
-    ip_address = models.GenericIPAddressField(unique=True, db_index=True)
-    reason = models.CharField(max_length=255, blank=True, default="")
-    blocked_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True, db_index=True)
-
-    class Meta:
-        ordering = ["-blocked_at"]
+@admin.register(BlockedIP)
+class BlockedIPAdmin(admin.ModelAdmin):
+    list_display = ('ip_address', 'reason', 'blocked_at', 'expires_at', 'is_active')
+    list_filter = ('is_active', 'blocked_at')
+    search_fields = ('ip_address', 'reason')
+    date_hierarchy = 'blocked_at'
+    readonly_fields = ('blocked_at',)
 
 
-class IPUsage(models.Model):
-    ip_address = models.GenericIPAddressField(unique=True, db_index=True)
-    total_requests = models.PositiveIntegerField(default=0)
-    total_files_uploaded = models.PositiveIntegerField(default=0)
-    last_request = models.DateTimeField(null=True, blank=True, db_index=True)
-    requests_today = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ["-total_requests"]
+@admin.register(IPUsage)
+class IPUsageAdmin(admin.ModelAdmin):
+    list_display = ('ip_address', 'total_requests', 'total_files_uploaded', 'last_request', 'requests_today')
+    list_filter = ('last_request',)
+    search_fields = ('ip_address',)
+    date_hierarchy = 'last_request'
+    readonly_fields = ('last_request',)
 
 
-class VisitEvent(models.Model):
-    path = models.CharField(max_length=255, db_index=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
-    user_agent = models.CharField(max_length=512, blank=True, default="")
-    session_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-
-    class Meta:
-        ordering = ["-created_at"]
+@admin.register(VisitEvent)
+class VisitEventAdmin(admin.ModelAdmin):
+    list_display = ('path', 'ip_address', 'session_key', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('path', 'ip_address', 'user_agent', 'session_key')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)
 
 
-class ContactMessage(models.Model):
-    username = models.CharField(max_length=120)
-    last_name = models.CharField(max_length=120)
-    email = models.EmailField(blank=True, default="")
-    message = models.TextField()
-    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ('username', 'last_name', 'email', 'ip_address', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('username', 'last_name', 'email', 'message', 'ip_address')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)
 
-    class Meta:
-        ordering = ["-created_at"]
 
-class PageStatus(models.Model):
-    """نموذج لتتبع حالة صفحات الموقع"""
-    
-    STATUS_CHOICES = [
-        ('working', 'Working'),
-        ('not_working', 'Not Working'), 
-        ('pending', 'Pending'),         
-        ('reprocess', 'Reprocess'),     
-    ]
-    
-    # معلومات الصفحة الأساسية
-    url = models.URLField(max_length=500, unique=True, db_index=True)
-    path = models.CharField(max_length=255, db_index=True)  # المسار النسبي
-    name = models.CharField(max_length=255, blank=True, default="")  # اسم الصفحة
-    category = models.CharField(max_length=100, blank=True, default="")  # تصنيف الصفحة
-    
-    # حالة الصفحة
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
-    
-    # معلومات الفحص (يمكن تركها فارغة)
-    last_checked = models.DateTimeField(null=True, blank=True)
-    response_time = models.FloatField(null=True, blank=True)
-    http_status = models.IntegerField(null=True, blank=True)
-    error_message = models.TextField(blank=True, default="")
-    
-    # معلومات إضافية
-    title = models.CharField(max_length=500, blank=True, default="")
-    meta_description = models.TextField(blank=True, default="")
-    content_hash = models.CharField(max_length=64, blank=True, default="")
-    
-    # إحصائيات
-    check_count = models.PositiveIntegerField(default=0)
-    failure_count = models.PositiveIntegerField(default=0)
-    
-    # تواريخ
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    # للصفحات الديناميكية
-    is_dynamic = models.BooleanField(default=False)
-    parameter_pattern = models.CharField(max_length=255, blank=True, default="")
-    
-    class Meta:
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['status', 'last_checked']),
-            models.Index(fields=['category', 'status']),
-        ]
-    
-    def __str__(self):
-        return f"{self.path} - {self.get_status_display()}"
+@admin.register(PageStatus)
+class PageStatusAdmin(admin.ModelAdmin):
+    list_display = ('path', 'name', 'category', 'status', 'last_checked', 'http_status', 'check_count')
+    list_filter = ('status', 'category', 'is_dynamic', 'last_checked', 'created_at')
+    search_fields = ('url', 'path', 'name', 'category', 'title', 'meta_description', 'error_message')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Page Information', {
+            'fields': ('url', 'path', 'name', 'category')
+        }),
+        ('Page Status', {
+            'fields': ('status', 'last_checked', 'response_time', 'http_status', 'error_message')
+        }),
+        ('Additional Information', {
+            'fields': ('title', 'meta_description', 'content_hash')
+        }),
+        ('Statistics', {
+            'fields': ('check_count', 'failure_count')
+        }),
+        ('Dynamic Pages', {
+            'fields': ('is_dynamic', 'parameter_pattern'),
+            'classes': ('collapse',)
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+
+# Add debug at the end to confirm registration
+print("=" * 50)
+print("ADMIN REGISTRATION SUMMARY")
+print("=" * 50)
+for model in [ToolUsage, FileProcess, SystemMetric, ErrorLog, BlockedIP, 
+              IPUsage, VisitEvent, ContactMessage, PageStatus]:
+    is_registered = admin.site.is_registered(model)
+    status = "✅ Registered" if is_registered else "❌ NOT REGISTERED"
+    print(f"{model.__name__:20}: {status}")
+print("=" * 50)
