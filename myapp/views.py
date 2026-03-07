@@ -23,6 +23,13 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+import json
+import logging
+from .models import PageStatus
 User = get_user_model() # Get the custom user model
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '../U-2-Net/onnx/model.onnx')
 
@@ -920,6 +927,7 @@ def test_download(request):
     except Exception as e:
         print(f"⚠️ خطأ في ترتيب الملفات: {str(e)}")
 
+
     return render(
         request,
         'test_download.html',
@@ -937,3 +945,227 @@ def test_download(request):
             'is_admin_tester': is_admin_tester,
         },
     )
+
+
+logger = logging.getLogger(__name__)
+
+@require_http_methods(["POST"])
+def save_page(request):
+    """
+    API لحفظ صفحة جديدة - يحفظ فقط الرابط والحالة
+    """
+    try:
+        data = json.loads(request.body)
+        
+        url = data.get('url')
+        if not url:
+            return JsonResponse({
+                'success': False,
+                'error': 'URL is required'
+            }, status=400)
+        
+        # استخراج المسار من الـ URL
+        from urllib.parse import urlparse
+        parsed_url = urlparse(url)
+        path = parsed_url.path or '/'
+        
+        # الحالة (افتراضي pending إذا لم ترسل)
+        status = data.get('status', 'pending')
+        
+        # معلومات إضافية اختيارية
+        name = data.get('name', '')
+        category = data.get('category', '')
+        
+        # البحث عن الصفحة بالـ URL (فريد)
+        page, created = PageStatus.objects.get_or_create(
+            url=url,  # نستخدم url كمعرف فريد كما هو محدد في الموديل
+            defaults={
+                'path': path,
+                'name': name,
+                'category': category,
+                'status': status,
+                'created_at': timezone.now(),
+            }
+        )
+        
+        if not created:
+            # تحديث المعلومات الأساسية فقط
+            page.path = path
+            if name:
+                page.name = name
+            if category:
+                page.category = category
+            if status:
+                page.status = status
+            page.updated_at = timezone.now()
+            page.save(update_fields=['path', 'name', 'category', 'status', 'updated_at'])
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Page updated successfully',
+                'page': {
+                    'id': page.id,
+                    'url': page.url,
+                    'path': page.path,
+                    'status': page.status
+                }
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Page saved successfully',
+            'page': {
+                'id': page.id,
+                'url': page.url,
+                'path': page.path,
+                'status': page.status
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error saving page: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def save_multiple_pages(request):
+    """
+    API لحفظ صفحات متعددة في طلب واحد
+    """
+    try:
+        data = json.loads(request.body)
+        pages = data.get('pages', [])
+        
+        if not pages:
+            return JsonResponse({
+                'success': False,
+                'error': 'Pages list is required'
+            }, status=400)
+        
+        saved_count = 0
+        updated_count = 0
+        results = []
+        
+        for page_data in pages:
+            url = page_data.get('url')
+            if not url:
+                continue
+            
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            path = parsed_url.path or '/'
+            
+            page, created = PageStatus.objects.get_or_create(
+                url=url,
+                defaults={
+                    'path': path,
+                    'name': page_data.get('name', ''),
+                    'category': page_data.get('category', ''),
+                    'status': page_data.get('status', 'pending'),
+                    'created_at': timezone.now(),
+                }
+            )
+            
+            if created:
+                saved_count += 1
+            else:
+                updated_count += 1
+                # تحديث إذا أردت
+            
+            results.append({
+                'url': url,
+                'status': page.status,
+                'created': created
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Saved: {saved_count}, Updated: {updated_count}',
+            'saved': saved_count,
+            'updated': updated_count,
+            'results': results
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error saving multiple pages: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def get_page_by_url(request):
+    """
+    API لجلب صفحة بواسطة URL
+    """
+    url = request.GET.get('url')
+    if not url:
+        return JsonResponse({
+            'success': False,
+            'error': 'URL parameter is required'
+        }, status=400)
+    
+    try:
+        page = PageStatus.objects.get(url=url)
+        return JsonResponse({
+            'success': True,
+            'page': {
+                'id': page.id,
+                'url': page.url,
+                'path': page.path,
+                'name': page.name,
+                'category': page.category,
+                'status': page.status,
+                'created_at': page.created_at,
+                'updated_at': page.updated_at
+            }
+        })
+    except PageStatus.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Page not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def get_all_pages(request):
+    """
+    API لجلب جميع الصفحات المحفوظة
+    """
+    try:
+        pages = PageStatus.objects.all().values(
+            'id', 'url', 'path', 'name', 'category', 'status', 'created_at', 'updated_at'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'pages': list(pages),
+            'count': pages.count()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting pages: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
