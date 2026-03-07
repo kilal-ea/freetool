@@ -68,16 +68,6 @@ class VisitEventAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
-@admin.register(ContactMessage)
-class ContactMessageAdmin(admin.ModelAdmin):
-    list_display = ('username', 'last_name', 'email', 'ip_address', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('username', 'last_name', 'email', 'message', 'ip_address')
-    date_hierarchy = 'created_at'
-    readonly_fields = ('created_at',)
-
-
-@admin.register(PageStatus)
 class PageStatusAdmin(admin.ModelAdmin):
     list_display = ('path', 'name', 'category', 'status', 'last_checked', 'http_status', 'check_count')
     list_filter = ('status', 'category', 'is_dynamic', 'last_checked', 'created_at')
@@ -105,3 +95,6 @@ class PageStatusAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
+
+# Register manually
+admin.site.register(PageStatus, PageStatusAdmin)
