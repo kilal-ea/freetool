@@ -149,13 +149,13 @@ class PageStatus(models.Model):
     parameter_pattern = models.CharField(max_length=255, blank=True, default="")
     
     class Meta:
-        ordering = ['-created_at']
-        verbose_name = "Page Status"
-        verbose_name_plural = "Page Statuses" ر
-        indexes = [
-            models.Index(fields=['status', 'last_checked']),
-            models.Index(fields=['category', 'status']),
-        ]
+    ordering = ['-created_at']
+    verbose_name = "Page Status"
+    verbose_name_plural = "Page Statuses"
+    indexes = [
+        models.Index(fields=['status', 'last_checked']),
+        models.Index(fields=['category', 'status']),
+    ]
     
     def __str__(self):
         return f"{self.path} - {self.get_status_display()}"
