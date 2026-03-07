@@ -1169,3 +1169,337 @@ def get_all_pages(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
+from django.utils import timezone
+from django.db.models import Q
+import json
+import logging
+from .models import PageStatus
+
+logger = logging.getLogger(__name__)
+
+# ... الكود السابق ...
+
+@require_http_methods(["GET"])
+def admin_get_pages(request):
+    """
+    API للإدارة - جلب الصفحات مع فلترة وبحث
+    """
+    try:
+        # فلترة حسب الحالة
+        status_filter = request.GET.get('status')
+        search_query = request.GET.get('search')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        # بناء query
+        queryset = PageStatus.objects.all()
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        if search_query:
+            queryset = queryset.filter(
+                Q(url__icontains=search_query) |
+                Q(title__icontains=search_query) |
+                Q(path__icontains=search_query)
+            )
+        
+        if start_date:
+            queryset = queryset.filter(created_at__gte=start_date)
+        
+        if end_date:
+            queryset = queryset.filter(created_at__lte=end_date)
+        
+        # ترتيب
+        queryset = queryset.order_by('-created_at')
+        
+        # Pagination
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 50))
+        paginator = Paginator(queryset, page_size)
+        
+        current_page = paginator.get_page(page)
+        
+        # تجهيز البيانات
+        pages_data = []
+        for page_obj in current_page:
+            pages_data.append({
+                'id': page_obj.id,
+                'url': page_obj.url,
+                'path': page_obj.path,
+                'name': page_obj.name,
+                'category': page_obj.category,
+                'status': page_obj.status,
+                'title': page_obj.title,
+                'meta_description': page_obj.meta_description,
+                'last_checked': page_obj.last_checked,
+                'response_time': page_obj.response_time,
+                'http_status': page_obj.http_status,
+                'error_message': page_obj.error_message,
+                'check_count': page_obj.check_count,
+                'failure_count': page_obj.failure_count,
+                'is_dynamic': page_obj.is_dynamic,
+                'created_at': page_obj.created_at,
+                'updated_at': page_obj.updated_at,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': pages_data,
+            'total': paginator.count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': paginator.num_pages,
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in admin_get_pages: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET", "PUT", "PATCH", "DELETE"])
+def admin_page_detail(request, page_id):
+    """
+    API للإدارة - جلب، تحديث، أو حذف صفحة محددة
+    """
+    try:
+        try:
+            page = PageStatus.objects.get(id=page_id)
+        except PageStatus.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Page not found'
+            }, status=404)
+        
+        if request.method == "GET":
+            # جلب تفاصيل الصفحة
+            return JsonResponse({
+                'success': True,
+                'id': page.id,
+                'url': page.url,
+                'path': page.path,
+                'name': page.name,
+                'category': page.category,
+                'status': page.status,
+                'title': page.title,
+                'meta_description': page.meta_description,
+                'last_checked': page.last_checked,
+                'response_time': page.response_time,
+                'http_status': page.http_status,
+                'error_message': page.error_message,
+                'check_count': page.check_count,
+                'failure_count': page.failure_count,
+                'is_dynamic': page.is_dynamic,
+                'parameter_pattern': page.parameter_pattern,
+                'created_at': page.created_at,
+                'updated_at': page.updated_at,
+            })
+        
+        elif request.method in ["PUT", "PATCH"]:
+            # تحديث الصفحة
+            data = json.loads(request.body)
+            
+            # تحديث الحقول المرسلة فقط
+            if 'url' in data and data['url'] != page.url:
+                # التحقق من عدم تكرار الـ URL
+                if PageStatus.objects.filter(url=data['url']).exclude(id=page_id).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'URL already exists'
+                    }, status=400)
+                page.url = data['url']
+                # تحديث المسار أيضاً
+                from urllib.parse import urlparse
+                parsed_url = urlparse(data['url'])
+                page.path = parsed_url.path or '/'
+            
+            if 'name' in data:
+                page.name = data['name']
+            
+            if 'category' in data:
+                page.category = data['category']
+            
+            if 'status' in data:
+                page.status = data['status']
+            
+            if 'title' in data:
+                page.title = data['title']
+            
+            if 'meta_description' in data:
+                page.meta_description = data['meta_description']
+            
+            if 'is_dynamic' in data:
+                page.is_dynamic = data['is_dynamic']
+            
+            if 'parameter_pattern' in data:
+                page.parameter_pattern = data['parameter_pattern']
+            
+            page.updated_at = timezone.now()
+            page.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Page updated successfully',
+                'page': {
+                    'id': page.id,
+                    'url': page.url,
+                    'path': page.path,
+                    'name': page.name,
+                    'category': page.category,
+                    'status': page.status,
+                }
+            })
+        
+        elif request.method == "DELETE":
+            # حذف الصفحة
+            page.delete()
+            return JsonResponse({
+                'success': True,
+                'message': 'Page deleted successfully'
+            })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in admin_page_detail: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_bulk_update(request):
+    """
+    API للإدارة - تحديث مجموعة من الصفحات
+    """
+    try:
+        data = json.loads(request.body)
+        ids = data.get('ids', [])
+        update_data = data.get('data', {})
+        
+        if not ids:
+            return JsonResponse({
+                'success': False,
+                'error': 'No page IDs provided'
+            }, status=400)
+        
+        if not update_data:
+            return JsonResponse({
+                'success': False,
+                'error': 'No update data provided'
+            }, status=400)
+        
+        # تحديث الصفحات
+        updated_count = PageStatus.objects.filter(id__in=ids).update(
+            **update_data,
+            updated_at=timezone.now()
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Updated {updated_count} pages',
+            'updated_count': updated_count
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in admin_bulk_update: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def admin_bulk_delete(request):
+    """
+    API للإدارة - حذف مجموعة من الصفحات
+    """
+    try:
+        data = json.loads(request.body)
+        ids = data.get('ids', [])
+        
+        if not ids:
+            return JsonResponse({
+                'success': False,
+                'error': 'No page IDs provided'
+            }, status=400)
+        
+        # حذف الصفحات
+        deleted_count = PageStatus.objects.filter(id__in=ids).delete()[0]
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Deleted {deleted_count} pages',
+            'deleted_count': deleted_count
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in admin_bulk_delete: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def admin_get_stats(request):
+    """
+    API للإدارة - جلب إحصائيات الصفحات
+    """
+    try:
+        total = PageStatus.objects.count()
+        working = PageStatus.objects.filter(status='working').count()
+        not_working = PageStatus.objects.filter(status='not_working').count()
+        pending = PageStatus.objects.filter(status='pending').count()
+        reprocess = PageStatus.objects.filter(status='reprocess').count()
+        
+        # إحصائيات إضافية
+        total_checks = PageStatus.objects.aggregate(total=models.Sum('check_count'))['total'] or 0
+        avg_response = PageStatus.objects.filter(
+            response_time__isnull=False
+        ).aggregate(avg=models.Avg('response_time'))['avg']
+        
+        return JsonResponse({
+            'success': True,
+            'stats': {
+                'total': total,
+                'working': working,
+                'not_working': not_working,
+                'pending': pending,
+                'reprocess': reprocess,
+                'total_checks': total_checks,
+                'avg_response_time': avg_response,
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in admin_get_stats: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
