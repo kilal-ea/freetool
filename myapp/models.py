@@ -110,10 +110,10 @@ class PageStatus(models.Model):
     """نموذج لتتبع حالة صفحات الموقع"""
     
     STATUS_CHOICES = [
-        ('working', 'Working'),        # يعمل ✅
-        ('not_working', 'Not Working'), # لا يعمل ❌
-        ('pending', 'Pending'),         # لم يعالج ⏳
-        ('reprocess', 'Reprocess'),     # طلب إعادة المعالجة 🔄
+        ('working', 'Working'),
+        ('not_working', 'Not Working'), 
+        ('pending', 'Pending'),         
+        ('reprocess', 'Reprocess'),     
     ]
     
     # معلومات الصفحة الأساسية
