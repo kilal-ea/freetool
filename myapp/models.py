@@ -110,22 +110,22 @@ class PageStatus(models.Model):
     """نموذج لتتبع حالة صفحات الموقع"""
     
     STATUS_CHOICES = [
-        ('working', 'Working'),        # يعمل ✅
-        ('not_working', 'Not Working'), # لا يعمل ❌
-        ('pending', 'Pending'),         # لم يعالج ⏳
-        ('reprocess', 'Reprocess'),     # طلب إعادة المعالجة 🔄
+        ('working', 'Working'),
+        ('not_working', 'Not Working'), 
+        ('pending', 'Pending'),         
+        ('reprocess', 'Reprocess'),     
     ]
     
     # معلومات الصفحة الأساسية
     url = models.URLField(max_length=500, unique=True, db_index=True)
-    path = models.CharField(max_length=255, db_index=True)  # المسار النسبي
-    name = models.CharField(max_length=255, blank=True, default="")  # اسم الصفحة
-    category = models.CharField(max_length=100, blank=True, default="")  # تصنيف الصفحة
+    path = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=255, blank=True, default="")
+    category = models.CharField(max_length=100, blank=True, default="")
     
     # حالة الصفحة
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     
-    # معلومات الفحص (يمكن تركها فارغة)
+    # معلومات الفحص
     last_checked = models.DateTimeField(null=True, blank=True)
     response_time = models.FloatField(null=True, blank=True)
     http_status = models.IntegerField(null=True, blank=True)
@@ -149,13 +149,16 @@ class PageStatus(models.Model):
     parameter_pattern = models.CharField(max_length=255, blank=True, default="")
     
     class Meta:
-    ordering = ['-created_at']
-    verbose_name = "Page Status"
-    verbose_name_plural = "Page Statuses"
-    indexes = [
-        models.Index(fields=['status', 'last_checked']),
-        models.Index(fields=['category', 'status']),
-    ]
+        ordering = ['-created_at']
+        verbose_name = "Page Status"
+        verbose_name_plural = "Page Statuses"
+        indexes = [
+            models.Index(fields=['status', 'last_checked']),
+            models.Index(fields=['category', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.path} - {self.get_status_display()}"
     
     def __str__(self):
         return f"{self.path} - {self.get_status_display()}"
