@@ -150,6 +150,8 @@ class PageStatus(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        verbose_name = "Page Status"
+        verbose_name_plural = "Page Statuses" ر
         indexes = [
             models.Index(fields=['status', 'last_checked']),
             models.Index(fields=['category', 'status']),
@@ -157,3 +159,5 @@ class PageStatus(models.Model):
     
     def __str__(self):
         return f"{self.path} - {self.get_status_display()}"
+
+   
