@@ -154,13 +154,17 @@ urlpatterns = [
     path("api/media/cleanup/", MediaMaintenance.cleanup_media_files, name="cleanup_media"),
     path("api/media/check/<str:file_id>/", MediaMaintenance.check_file_validity, name="check_file_validity"),
 
+    # مسارات الصفحات (PageStatus)
     path('api/page/save/', views.save_page, name='save_page'),
     path('api/pages/save-multiple/', views.save_multiple_pages, name='save_multiple_pages'),
     path('api/page/get/', views.get_page_by_url, name='get_page'),
     path('api/pages/all/', views.get_all_pages, name='get_all_pages'),
+    
+    # مسارات الإدارة للصفحات
     path('api/admin/pages/', views.admin_get_pages, name='admin_get_pages'),
     path('api/admin/pages/<int:page_id>/', views.admin_page_detail, name='admin_page_detail'),
     path('api/admin/pages/bulk-update/', views.admin_bulk_update, name='admin_bulk_update'),
     path('api/admin/pages/bulk-delete/', views.admin_bulk_delete, name='admin_bulk_delete'),
     path('api/admin/pages/stats/', views.admin_get_stats, name='admin_get_stats'),
+]
 ]
